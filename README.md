@@ -1,4 +1,4 @@
-### DAC(digital to analog converter) performance testing tool
+## DAC(digital to analog converter) performance testing tool
 
 #### For in-depth explanation of this project, read "explanation.pdf"
 The goal of this project is to provide user with a low-cost way to test DACs to prevent counterfeited electronics parts. This testing method can be used to test DAC <=16 bit. 
