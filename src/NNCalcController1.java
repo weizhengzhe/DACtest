@@ -47,9 +47,9 @@ public final class NNCalcController1 implements NNCalcController {
 
     }
 
-    static double[] recordSample() {
+    static double[] recordSample(int numOfInput) {
         AudioFormat fmt = new AudioFormat(44100f, 16, 1, true, false);
-        final int bufferByteSize = 88200;//2048;
+        final int bufferByteSize = numOfInput * 2;//2048;
         double[] samples = new double[bufferByteSize / 2];
         TargetDataLine line;
         try {

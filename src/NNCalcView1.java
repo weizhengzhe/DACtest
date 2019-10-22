@@ -6,10 +6,14 @@ import java.awt.event.ActionEvent;
 import javax.sound.sampled.LineUnavailableException;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
-import javax.swing.JComboBox;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.WindowConstants;
+
+import org.apache.commons.math3.complex.Complex;
+import org.apache.commons.math3.transform.DftNormalization;
+import org.apache.commons.math3.transform.FastFourierTransformer;
+import org.apache.commons.math3.transform.TransformType;
 
 import components.naturalnumber.NaturalNumber;
 import components.simplewriter.SimpleWriter;
@@ -35,8 +39,9 @@ public final class NNCalcView1 extends JFrame implements NNCalcView {
     /**
      * Operator and related buttons.
      */
-    private final JButton bMonotonic, bEnter, bTestINL, bDrawMonotonic;
-    private final JComboBox<String> portList, bitSelection;
+    private final JButton bMonotonic, bEnter, bTestINL, bDrawMonotonic,
+            bLevelMeter, bPlotFlatness;
+    //private final JComboBox<String> portList, bitSelection;
     private final boolean flag = true;
 
     /**
@@ -64,34 +69,36 @@ public final class NNCalcView1 extends JFrame implements NNCalcView {
          * Create widgets
          */
 
-        this.bMonotonic = new JButton("Max bits with 100% monotonicity");
-        //this.bMonotonic.setEnabled(false);
-
-        this.bDrawMonotonic = new JButton("Graph non-monotonic region");
+        this.bMonotonic = new JButton("Plot DFT output");
+        this.bMonotonic.setEnabled(false);
+        this.bLevelMeter = new JButton("Test output flatness");
+        this.bPlotFlatness = new JButton("Plot flatness test");
+        this.bPlotFlatness.setEnabled(false);
+        this.bDrawMonotonic = new JButton("Plot FFT output");
         this.bDrawMonotonic.setEnabled(false);
-        this.bEnter = new JButton("Connect");
-        this.bTestINL = new JButton("Test INL performance at selected bits");
+        this.bEnter = new JButton("Test with DFT(precise)");
+        this.bTestINL = new JButton("Test with FFT(fast)");
         //this.bTestINL.setEnabled(false);
-        this.portList = new JComboBox<String>();
-        this.bitSelection = new JComboBox<String>();
+        // this.portList = new JComboBox<String>();
+        // this.bitSelection = new JComboBox<String>();
         /*
          * Create main button panel
          */
 
         this.bDrawMonotonic.addActionListener(this);
 
-        this.bitSelection.addItem("selectBits");
-        this.bitSelection.addItem("8");
-        this.bitSelection.addItem("9");
-        this.bitSelection.addItem("10");
-        this.bitSelection.addItem("11");
-        this.bitSelection.addItem("12");
-        this.bitSelection.addItem("13");
-        this.bitSelection.addItem("14");
-        this.bitSelection.addItem("15");
-        this.bitSelection.addItem("16");
-        this.bitSelection.addActionListener(this);
-        this.bitSelection.setEnabled(false);
+//        this.bitSelection.addItem("selectBits");
+//        this.bitSelection.addItem("8");
+//        this.bitSelection.addItem("9");
+//        this.bitSelection.addItem("10");
+//        this.bitSelection.addItem("11");
+//        this.bitSelection.addItem("12");
+//        this.bitSelection.addItem("13");
+//        this.bitSelection.addItem("14");
+//        this.bitSelection.addItem("15");
+//        this.bitSelection.addItem("16");
+//        this.bitSelection.addActionListener(this);
+//        this.bitSelection.setEnabled(false);
         /*
          * Create operation panel
          */
@@ -104,11 +111,13 @@ public final class NNCalcView1 extends JFrame implements NNCalcView {
          */
 
         operationPanel.add(this.bEnter);
-        operationPanel.add(this.portList);
+        // operationPanel.add(this.portList);
         operationPanel.add(this.bMonotonic);
-        operationPanel.add(this.bitSelection);
+        // operationPanel.add(this.bitSelection);
         operationPanel.add(this.bTestINL);
         operationPanel.add(this.bDrawMonotonic);
+        operationPanel.add(this.bLevelMeter);
+        operationPanel.add(this.bPlotFlatness);
         /*
          * Organize main window
          */
@@ -125,6 +134,8 @@ public final class NNCalcView1 extends JFrame implements NNCalcView {
         this.bEnter.addActionListener(this);
         this.bMonotonic.addActionListener(this);
         this.bTestINL.addActionListener(this);
+        this.bLevelMeter.addActionListener(this);
+        this.bPlotFlatness.addActionListener(this);
         // Set up the main application window --------------------------------
         this.pack();
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -148,7 +159,7 @@ public final class NNCalcView1 extends JFrame implements NNCalcView {
 
         this.bMonotonic.setEnabled(true);
         this.bTestINL.setEnabled(true);
-        this.bitSelection.setEnabled(true);
+        //  this.bitSelection.setEnabled(true);
         this.bDrawMonotonic.setEnabled(true);
     }
 
@@ -176,7 +187,7 @@ public final class NNCalcView1 extends JFrame implements NNCalcView {
                 @Override
                 public void run() {
                     try {
-                        Generate16bitSine.playSound(400.0);
+                        Generate16bitSine.playSound(5000.0);
                     } catch (LineUnavailableException e) {
                         // TODO Auto-generated catch block
                         e.printStackTrace();
@@ -185,7 +196,7 @@ public final class NNCalcView1 extends JFrame implements NNCalcView {
             });
             t1.start();
 
-            double[] audioSample = NNCalcController1.recordSample();
+            double[] audioSample = NNCalcController1.recordSample(44100);
             System.out.println("length is " + audioSample.length);
             double[] outR = new double[audioSample.length];
             double[] outI = new double[audioSample.length];
@@ -199,16 +210,21 @@ public final class NNCalcView1 extends JFrame implements NNCalcView {
                 results[i] = Math.sqrt(real * real + imaginary * imaginary);
             }
 
-            SimpleWriter out = new SimpleWriter1L("DFTresult.txt");
+            SimpleWriter out3 = new SimpleWriter1L("DFTresult.txt");
             for (int i = 0; i < results.length; i++) {
-                out.println(results[i]);
+                out3.println(results[i]);
             }
+            out3.close();
+            this.bMonotonic.setEnabled(true);
+            this.bLevelMeter.setEnabled(false);
 
+            this.bEnter.setEnabled(false);
+            this.bTestINL.setEnabled(false);
         } else if (source == this.bMonotonic) {
             //this.controller.processAddEvent();   //load data into Map
 
             ScatterPlotExample example = new ScatterPlotExample(
-                    "Scatter Chart Example | BORAJI.COM");
+                    "DFT of sine wave for SNR check");
             example.setSize(1000, 500);
             example.setLocationRelativeTo(null);
             example.setDefaultCloseOperation(WindowConstants.HIDE_ON_CLOSE);
@@ -229,7 +245,107 @@ public final class NNCalcView1 extends JFrame implements NNCalcView {
 
         } else if (source == this.bTestINL) {
 
+            Thread t1 = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        Generate16bitSine.playSound(5000.0);
+                    } catch (LineUnavailableException e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
+                    }
+                }
+            });
+            t1.start();
+
+            double[] audioSample = NNCalcController1.recordSample(32768);
+            System.out.println("length is " + audioSample.length);
+            double[] outR = new double[audioSample.length];
+            double[] outI = new double[audioSample.length];
+
+            double[] fftBuffer = new double[32768];
+            for (int i = 0; i < fftBuffer.length; i++) {
+                fftBuffer[i] = audioSample[i];
+            }
+            FastFourierTransformer fft = new FastFourierTransformer(
+                    DftNormalization.STANDARD);
+            Complex resultC[] = fft.transform(fftBuffer, TransformType.FORWARD);
+
+            double[] results = new double[audioSample.length];
+            for (int i = 0; i < resultC.length; i++) {
+                double real = resultC[i].getReal();
+                double imaginary = resultC[i].getImaginary();
+                results[i] = Math.sqrt(real * real + imaginary * imaginary);
+            }
+            double fftResolution = 44100.0 / fftBuffer.length;
+            SimpleWriter out = new SimpleWriter1L("FFTresult.txt");
+            for (int i = 0; i < results.length; i++) {
+                out.println(results[i]);
+            }
+            out.close();
+            this.bDrawMonotonic.setEnabled(true);
+
+            this.bLevelMeter.setEnabled(false);
+
+            this.bEnter.setEnabled(false);
+            this.bTestINL.setEnabled(false);
         } else if (source == this.bDrawMonotonic) {
+            PlotFFT example = new PlotFFT("Scatter Chart Example | BORAJI.COM");
+            example.setSize(1000, 500);
+            example.setLocationRelativeTo(null);
+            example.setDefaultCloseOperation(WindowConstants.HIDE_ON_CLOSE);
+            example.setVisible(true);
+
+        } else if (source == this.bLevelMeter) {
+
+            Thread t6 = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        GenerateNoise.playNoise();
+                    } catch (LineUnavailableException e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
+                    }
+                }
+            });
+            t6.start();
+
+            double[] audioSample = NNCalcController1.recordSample(65536);
+            System.out.println("length is " + audioSample.length);
+
+            double[] fftBuffer = new double[65536];
+            for (int i = 0; i < fftBuffer.length; i++) {
+                fftBuffer[i] = audioSample[i];
+            }
+            FastFourierTransformer fft = new FastFourierTransformer(
+                    DftNormalization.STANDARD);
+            Complex resultC[] = fft.transform(fftBuffer, TransformType.FORWARD);
+
+            double[] results = new double[audioSample.length];
+            for (int i = 0; i < resultC.length; i++) {
+                double real = resultC[i].getReal();
+                double imaginary = resultC[i].getImaginary();
+                results[i] = Math.sqrt(real * real + imaginary * imaginary);
+            }
+            double fftResolution = 44100.0 / fftBuffer.length;
+            SimpleWriter out = new SimpleWriter1L("whiteNoiseFFTresult.txt");
+            for (int i = 0; i < results.length; i++) {
+                out.println(results[i]);
+            }
+            out.close();
+            this.bLevelMeter.setEnabled(false);
+            this.bPlotFlatness.setEnabled(true);
+            this.bEnter.setEnabled(false);
+            this.bTestINL.setEnabled(false);
+
+        } else if (source == this.bPlotFlatness) {
+            PlotWhiteNoiseFFT example3 = new PlotWhiteNoiseFFT(
+                    "Amplitue VS Frequency");
+            example3.setSize(1000, 500);
+            example3.setLocationRelativeTo(null);
+            example3.setDefaultCloseOperation(WindowConstants.HIDE_ON_CLOSE);
+            example3.setVisible(true);
 
         }
 
@@ -242,10 +358,10 @@ public final class NNCalcView1 extends JFrame implements NNCalcView {
 
     }
 
-    @Override
-    public void setPortSelectionDisable() {
-        this.portList.setEnabled(false);
-
-    }
+//    @Override
+//    public void setPortSelectionDisable() {
+//        this.portList.setEnabled(false);
+//
+//    }
 
 }

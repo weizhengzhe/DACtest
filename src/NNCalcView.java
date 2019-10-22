@@ -47,6 +47,6 @@ public interface NNCalcView extends ActionListener {
      *
      * new value of top operand display
      */
-    void setPortSelectionDisable();
+//    void setPortSelectionDisable();
 
 }

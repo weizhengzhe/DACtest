@@ -28,8 +28,8 @@ public class ScatterPlotExample extends JFrame {
 
         // Create chart
         JFreeChart chart = ChartFactory.createScatterPlot(
-                "Boys VS Girls weight comparison chart", "X-Axis", "Y-Axis",
-                dataset);
+                "DFT of sine wave by direct digital synthesis at 5000Hz",
+                "Frequency Hz", "Amplitude", dataset);
 
         //Changes background color
         XYPlot plot = (XYPlot) chart.getPlot();
@@ -63,7 +63,7 @@ public class ScatterPlotExample extends JFrame {
         in.close();
 
         //Boys (Age,weight) series
-        XYSeries series1 = new XYSeries("Boys");
+        XYSeries series1 = new XYSeries("DAC Under Test");
         for (int j = 0; j < transformBins.size() / 2; j++) {
             series1.add(j, transformBins.value(j));
         }
